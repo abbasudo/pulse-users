@@ -1,0 +1,13 @@
+migrations:
+  - vendor/laravel/pulse/database/migrations
+
+env:
+  DB_CONNECTION: 'mysql'
+  DB_USERNAME: 'root'
+  DB_DATABASE: 'pulse-users'
+
+workbench:
+  discovers:
+    web: true
+    views: true
+    config: true
