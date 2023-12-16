@@ -7,7 +7,7 @@
 [![Latest Unstable Version](http://poser.pugx.org/abbasudo/pulse-users/v)](https://packagist.org/packages/abbasudo/pulse-users)
 [![PHP Version Require](http://poser.pugx.org/abbasudo/pulse-users/require/php)](https://packagist.org/packages/abbasudo/pulse-users)
 
-Pulse Users gives you insights about your laravel app users, Tracks their behavior, and monitors overall app usage.
+Pulse Users gives you an Hourly distributed requests chart.
 
 ## Installation
 
@@ -37,7 +37,6 @@ Then, you can modify the `dashboard.blade.php` file:
 
     <livewire:pulse.usage cols='4' rows='1' />
 ```
-
 ## License
 
 Pulse Users is Licensed under The MIT License (MIT). Please see [License File](https://github.com/abbasudo/pulse-users/blob/master/LICENSE) for more information.
