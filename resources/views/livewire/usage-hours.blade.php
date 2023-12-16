@@ -1,85 +1,44 @@
-@php
-    use Illuminate\Support\Str;
-@endphp
 <x-pulse::card :cols="$cols" :rows="$rows" :class="$class">
-    <x-pulse::card-header
-            name="Queues"
-            title="Time: {{ number_format($time) }}ms; Run at: {{ $runAt }};"
-            details="past {{ $this->periodForHumans() }}"
-    >
-        <x-slot:icon>
-            <x-pulse::icons.queue-list />
-        </x-slot:icon>
-        <x-slot:actions>
-            <div class="flex flex-wrap gap-4">
-                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    <div class="h-0.5 w-3 rounded-full bg-[rgba(107,114,128,0.5)]"></div>
-                    user_request
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    <div class="h-0.5 w-3 rounded-full bg-[rgba(147,51,234,0.5)]"></div>
-                    Processing
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    <div class="h-0.5 w-3 rounded-full bg-[#9333ea]"></div>
-                    Processed
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    <div class="h-0.5 w-3 rounded-full bg-[#eab308]"></div>
-                    Released
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    <div class="h-0.5 w-3 rounded-full bg-[#e11d48]"></div>
-                    Failed
-                </div>
+  <x-pulse::card-header
+          name="Usage Distribution"
+          title="Time: {{ number_format($time) }}ms; Run at: {{ $runAt }};"
+          details="past 7 days"
+  >
+    <x-slot:icon>
+      <x-pulse::icons.queue-list />
+    </x-slot:icon>
+  </x-pulse::card-header>
+
+  <x-pulse::scroll :expand="$expand" wire:poll.5s="">
+    @if ($usage->isEmpty())
+      <x-pulse::no-results />
+    @else
+      <div class="grid gap-3 mx-px mb-px">
+          <div wire:key="usage-hours">
+            @php
+              $highest = $usage->flatten()->max();
+            @endphp
+
+            <div class="mt-3 relative">
+              <div class="absolute -left-px -top-2 max-w-fit h-4 flex items-center px-1 text-xs leading-none text-white font-bold bg-purple-500 rounded after:[--triangle-size:4px] after:border-l-purple-500 after:absolute after:right-[calc(-1*var(--triangle-size))] after:top-[calc(50%-var(--triangle-size))] after:border-t-[length:var(--triangle-size)] after:border-b-[length:var(--triangle-size)] after:border-l-[length:var(--triangle-size)] after:border-transparent">
+                  {{ number_format($highest) }}
+              </div>
+
+              <div
+                      wire:ignore
+                      class="h-14"
+                      x-data="queueChart({
+                                labels: @js($usage->keys()),
+                                data: @js($usage->values()),
+                       })"
+              >
+                <canvas x-ref="canvas" class="ring-1 ring-gray-900/5 dark:ring-gray-100/10 bg-gray-50 dark:bg-gray-800 rounded-md shadow-sm"></canvas>
+              </div>
             </div>
-        </x-slot:actions>
-    </x-pulse::card-header>
-
-    <x-pulse::scroll :expand="$expand" wire:poll.5s="">
-        @if ($queues->isEmpty())
-            <x-pulse::no-results />
-        @else
-            <div class="grid gap-3 mx-px mb-px">
-                @foreach ($queues as $queue => $readings)
-                    <div wire:key="{{ $queue }}">
-                        <h3 class="font-bold text-gray-700 dark:text-gray-300">
-                            @if ($showConnection)
-                                {{ $queue }}
-                            @else
-                                {{ Str::after($queue, ':') }}
-                            @endif
-                        </h3>
-                        @php
-                            $highest = $readings->flatten()->max();
-                        @endphp
-
-                        <div class="mt-3 relative">
-                            <div class="absolute -left-px -top-2 max-w-fit h-4 flex items-center px-1 text-xs leading-none text-white font-bold bg-purple-500 rounded after:[--triangle-size:4px] after:border-l-purple-500 after:absolute after:right-[calc(-1*var(--triangle-size))] after:top-[calc(50%-var(--triangle-size))] after:border-t-[length:var(--triangle-size)] after:border-b-[length:var(--triangle-size)] after:border-l-[length:var(--triangle-size)] after:border-transparent">
-                                @if ($config['sample_rate'] < 1)
-                                    <span title="Sample rate: {{ $config['sample_rate'] }}, Raw value: {{ number_format($highest) }}">~{{ number_format($highest * (1 / $config['sample_rate'])) }}</span>
-                                @else
-                                    {{ number_format($highest) }}
-                                @endif
-                            </div>
-
-                            <div
-                                    wire:ignore
-                                    class="h-14"
-                                    x-data="queueChart({
-                                    queue: '{{ $queue }}',
-                                    readings: @js($readings),
-                                    sampleRate: {{ $config['sample_rate'] }},
-                                })"
-                            >
-                                <canvas x-ref="canvas" class="ring-1 ring-gray-900/5 dark:ring-gray-100/10 bg-gray-50 dark:bg-gray-800 rounded-md shadow-sm"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
-    </x-pulse::scroll>
+          </div>
+      </div>
+    @endif
+  </x-pulse::scroll>
 </x-pulse::card>
 
 @script
@@ -87,96 +46,95 @@
   Alpine.data('queueChart', (config) => ({
     init() {
       let chart = new Chart(
-        this.$refs.canvas,
-        {
-          type: 'line',
-          data: {
-            labels: this.labels(config.readings),
-            datasets: [
+              this.$refs.canvas,
               {
-                label: 'user_request',
-                borderColor: 'rgba(107,114,128,0.5)',
-                data: this.scale(config.readings.user_request),
-                order: 4,
-              },
-            ],
-          },
-          options: {
-            maintainAspectRatio: false,
-            layout: {
-              autoPadding: false,
-              padding: {
-                top: 1,
-              },
-            },
-            datasets: {
-              line: {
-                borderWidth: 2,
-                borderCapStyle: 'round',
-                pointHitRadius: 10,
-                pointStyle: false,
-                tension: 0.2,
-                spanGaps: false,
-                segment: {
-                  borderColor: (ctx) => ctx.p0.raw === 0 && ctx.p1.raw === 0 ? 'transparent' : undefined,
-                }
-              }
-            },
-            scales: {
-              x: {
-                display: false,
-              },
-              y: {
-                display: false,
-                min: 0,
-                max: this.highest(config.readings),
-              },
-            },
-            plugins: {
-              legend: {
-                display: false,
-              },
-              tooltip: {
-                mode: 'index',
-                position: 'nearest',
-                intersect: false,
-                callbacks: {
-                  beforeBody: (context) => context
-                    .map(item => `${item.dataset.label}: ${config.sampleRate < 1 ? '~' : ''}${item.formattedValue}`)
-                    .join(', '),
-                  label: () => null,
+                type: 'bar',
+                data: {
+                  labels: config.labels,
+                  datasets: [
+                    {
+                      label: 'CPU Percent',
+                      borderColor: '#9333ea',
+                      borderWidth: 2,
+                      borderCapStyle: 'round',
+                      data: config.data,
+                      pointHitRadius: 10,
+                      pointStyle: false,
+                      tension: 0.2,
+                      spanGaps: false,
+                    },
+                  ],
                 },
-              },
-            },
-          },
-        }
+                options: {
+                  maintainAspectRatio: false,
+                  layout: {
+                    autoPadding: false,
+                    padding: {
+                      top: 1,
+                    },
+                  },
+                  datasets: {
+                    line: {
+                      borderWidth: 2,
+                      borderCapStyle: 'round',
+                      pointHitRadius: 10,
+                      pointStyle: false,
+                      tension: 0.2,
+                      spanGaps: false,
+                      segment: {
+                        borderColor: (ctx) => ctx.p0.raw === 0 && ctx.p1.raw === 0 ? 'transparent' : undefined,
+                      }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      display: false,
+                    },
+                    y: {
+                      display: false,
+                      min: 0,
+                      max: this.highest(config.data),
+                    },
+                  },
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      mode: 'index',
+                      position: 'nearest',
+                      intersect: false,
+                      callbacks: {
+                        // beforeBody: (context) => context
+                        //         .map(item => `${item.dataset.label}: ${config.sampleRate < 1 ? '~' : ''}${item.formattedValue}`)
+                        //         .join(', '),
+                        label: () => null,
+                      },
+                    },
+                  },
+                },
+              }
       )
 
-      Livewire.on('queues-chart-update', ({ queues }) => {
+      Livewire.on('usage-hours-update', ({ labels , data }) => {
         if (chart === undefined) {
           return
         }
 
-        if (queues[config.queue] === undefined && chart) {
+        if (usage === undefined && chart) {
           chart.destroy()
           chart = undefined
           return
         }
 
-        chart.data.labels = this.labels(queues[config.queue])
-        chart.options.scales.y.max = this.highest(queues[config.queue])
-        chart.data.datasets[0].data = this.scale(queues[config.queue].user_request)
+        chart.data.labels = labels
+        chart.data.datasets[0].data = data
+        chart.options.scales.y.max = this.highest(data)
         chart.update()
       })
     },
-    labels(readings) {
-      return Object.keys(readings.user_request)
-    },
-    scale(data) {
-      return Object.values(data).map(value => value * (1 / config.sampleRate ))
-    },
     highest(readings) {
-      return Math.max(...Object.values(readings).map(dataset => Math.max(...Object.values(dataset)))) * (1 / config.sampleRate)
+      return Math.max(...Object.values(readings))
     }
   }))
 </script>
