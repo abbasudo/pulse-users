@@ -32,7 +32,7 @@ Then, you can modify the `dashboard.blade.php` file:
 
 ```diff
 <x-pulse>
-+   <livewire:pulse.usage-hours cols='4' rows='2' />
++   <livewire:pulse.usage-hours cols='4' />
 
     <livewire:pulse.servers cols="full" />
 
