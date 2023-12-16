@@ -9,7 +9,7 @@
         </x-slot:icon>
     </x-pulse::card-header>
 
-    <section wire:poll.5s="">
+    <x-pulse::scroll wire:poll.5s="">
         @if ($usage->filter()->isEmpty())
             <x-pulse::no-results/>
         @else
@@ -35,10 +35,27 @@
                                     class="ring-1 ring-gray-900/5 dark:ring-gray-100/10 bg-gray-50 dark:bg-gray-800 rounded-md shadow-sm"></canvas>
                         </div>
                     </div>
+                    <div class="flex items-center text-gray-400 dark:text-gray-600 font-medium">
+                        <span class="px-1">
+                            0
+                        </span>
+                        <hr class="flex-grow">
+                        <span class="px-3">
+                            7
+                        </span>
+                        <hr class="flex-grow">
+                        <span class="px-3">
+                            15
+                        </span>
+                        <hr class="flex-grow">
+                        <span class="pl-3">
+                            23
+                        </span>
+                    </div>
                 </div>
             </div>
         @endif
-    </section>
+    </x-pulse::scroll>
 </x-pulse::card>
 
 @script
@@ -106,9 +123,6 @@
                 position: 'nearest',
                 intersect: false,
                 callbacks: {
-                  title: (context) => context
-                    .map(item => `hour : ${item.formattedValue}`)
-                    .join(', '),
                   beforeBody: (context) => context
                     .map(item => `${item.dataset.label}: ${config.sampleRate < 1 ? '~' : ''}${item.formattedValue}`)
                     .join(', '),
