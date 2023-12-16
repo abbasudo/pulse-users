@@ -26,7 +26,7 @@
 
                         <div
                                 wire:ignore
-                                x-data="queueChart({
+                                x-data="usageChart({
                                 labels: @js($usage->keys()),
                                 data: @js($usage->values()),
                        })"
@@ -60,7 +60,7 @@
 
 @script
 <script>
-  Alpine.data('queueChart', (config) => ({
+  Alpine.data('usageChart', (config) => ({
     init() {
       let chart = new Chart(
         this.$refs.canvas,
@@ -74,12 +74,8 @@
                 borderColor: '#9333ea',
                 backgroundColor: 'rgba(147,51,234,0.10)',
                 borderWidth: 2,
-                borderCapStyle: 'round',
+                borderRadius: 3,
                 data: config.data,
-                pointHitRadius: 10,
-                pointStyle: false,
-                tension: 0.2,
-                spanGaps: false,
               },
             ],
           },
