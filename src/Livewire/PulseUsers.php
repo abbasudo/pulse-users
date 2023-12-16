@@ -3,7 +3,6 @@
 namespace Abbasudo\PulseUsers\Livewire;
 
 use Carbon\CarbonImmutable;
-use Carbon\CarbonInterval;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Collection;
@@ -29,7 +28,7 @@ class PulseUsers extends Card
     public function render(): Renderable
     {
         [$usage, $time, $runAt] = $this->remember(function () {
-            return $this->graph('user_request', 'count', $this->periodAsInterval());
+            return $this->graph('user_request', 'count');
         });
 
 
@@ -47,11 +46,11 @@ class PulseUsers extends Card
     /**
      * Retrieve aggregate values for plotting on a graph.
      *
-     * @param list<string> $types
+     * @param string $type
      * @param 'count'|'min'|'max'|'sum'|'avg' $aggregate
-     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<string, int|null>>>
+     * @return Collection<string, \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<string, int|null>>>
      */
-    public function graph(string $type, string $aggregate, CarbonInterval $interval): Collection
+    public function graph(string $type, string $aggregate): Collection
     {
         if (!in_array($aggregate, $allowed = ['count', 'min', 'max', 'sum', 'avg'])) {
             throw new InvalidArgumentException(
@@ -59,29 +58,27 @@ class PulseUsers extends Card
             );
         }
 
-        $period = $interval->totalSeconds / 60;
+        $firstBucket = CarbonImmutable::now()->subWeek();
 
-        $structure = collect()->range(0, 23)->mapWithKeys(function ($key) {
-            return [str_pad($key, 3, ':0', STR_PAD_LEFT) => 0];
-        })->keyBy(function ($item, $key) {
-            return (string)$key;
+        $structure = collect(range(0, 23))->mapWithKeys(function ($value) {
+            return ['hour : ' . $value => 0];
         });
 
         $readings = $this->connection()->table('pulse_aggregates')
-            ->select(['bucket', 'type', 'key', 'value'])
+            ->selectRaw('sum(value) as requests')
+            ->selectRaw('HOUR(FROM_UNIXTIME(bucket)) as hour')
             ->where('type', $type)
+            ->where('bucket', '>=', $firstBucket)
             ->where('aggregate', $aggregate)
-            ->where('period', $period)
+            ->where('period', 60)
+            ->groupBy('hour')
             ->get();
-
 
         return $structure->merge(
             $readings->mapWithKeys(function ($reading) {
-                return [CarbonImmutable::createFromTimestamp($reading->bucket)->format(':H') => (int)$reading->value];
+                return ['hour : ' . $reading->hour => (int)$reading->requests];
             })
-        )->keyBy(function ($item, $key) {
-            return (string)str($key)->after(':');
-        });
+        );
     }
 
     /**
