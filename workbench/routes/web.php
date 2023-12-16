@@ -1,8 +1,10 @@
 <?php
 
-use Orchestra\Testbench\Factories\UserFactory;
+use Workbench\App\Jobs\ProcessPodcast;
+use Workbench\App\Models\User;
 
 Route::get('/test', function () {
-    \Illuminate\Support\Facades\Auth::setUser((new UserFactory)->create());
+    ProcessPodcast::dispatch();
+    \Illuminate\Support\Facades\Auth::setUser(User::find(1));
     return response('Hello', 418);
 });
