@@ -15,6 +15,13 @@ class PulseUsersServiceProvider extends PackageServiceProvider
         $package
             ->name('pulse-users')
             ->hasViews('pulse-users');
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'pulse-users');
 
         $this->callAfterResolving('livewire', function (LivewireManager $livewire, Application $app) {
             $livewire->component('pulse.usage-hours', PulseUsers::class);
