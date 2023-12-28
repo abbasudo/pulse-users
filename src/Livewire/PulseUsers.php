@@ -28,7 +28,7 @@ class PulseUsers extends Card
     public function render(): Renderable
     {
         [$usage, $time, $runAt] = $this->remember(function () {
-            return $this->graph('user_request', 'count');
+            return $this->graph(['user_request'], 'count');
         });
 
 
@@ -46,11 +46,11 @@ class PulseUsers extends Card
     /**
      * Retrieve aggregate values for plotting on a graph.
      *
-     * @param string $type
+     * @param array $types
      * @param 'count'|'min'|'max'|'sum'|'avg' $aggregate
      * @return Collection<string, \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<string, int|null>>>
      */
-    public function graph(string $type, string $aggregate): Collection
+    public function graph(array $types, string $aggregate): Collection
     {
         if (!in_array($aggregate, $allowed = ['count', 'min', 'max', 'sum', 'avg'])) {
             throw new InvalidArgumentException(
@@ -67,7 +67,7 @@ class PulseUsers extends Card
         $readings = $this->connection()->table('pulse_aggregates')
             ->selectRaw('sum(value) as requests')
             ->selectRaw('HOUR(FROM_UNIXTIME(bucket)) as hour')
-            ->where('type', $type)
+            ->whereIn('type', [$types])
             ->where('bucket', '>=', $firstBucket)
             ->where('aggregate', $aggregate)
             ->where('period', 60)
