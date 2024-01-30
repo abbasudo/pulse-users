@@ -135,12 +135,6 @@
           return
         }
 
-        if (usage === undefined && chart) {
-          chart.destroy()
-          chart = undefined
-          return
-        }
-
         chart.data.labels = labels
         chart.data.datasets[0].data = data
         chart.options.scales.y.max = this.highest(data)
