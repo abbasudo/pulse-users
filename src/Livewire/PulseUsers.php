@@ -33,7 +33,7 @@ class PulseUsers extends Card
 
 
         if (Livewire::isLivewireRequest()) {
-            $this->dispatch('usage-hours-update', lable: $usage->keys(), data: $usage->values());
+            $this->dispatch('usage-hours-update', labels: $usage->keys(), data: $usage->values());
         }
 
         return View::make('pulse-users::livewire.usage-hours', [
