@@ -70,7 +70,6 @@ class PulseUsers extends Card
             ->whereIn('type', [$types])
             ->where('bucket', '>=', $firstBucket)
             ->where('aggregate', $aggregate)
-            ->where('period', 60)
             ->groupBy('hour')
             ->get();
 
