@@ -21,7 +21,7 @@
     "require": {
         "php": "^8.1",
         "illuminate/contracts": "^10.21|^11.4",
-        "laravel/pulse": "^1.0@beta",
+        "laravel/pulse": "^1.0",
         "spatie/laravel-package-tools": "^1.14.0"
     },
     "require-dev": {
