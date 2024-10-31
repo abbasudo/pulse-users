@@ -12,6 +12,7 @@ use InvalidArgumentException;
 use Laravel\Pulse\Livewire\Card;
 use Laravel\Pulse\Livewire\Concerns;
 use Livewire\Attributes\Lazy;
+use Livewire\Attributes\Url;
 use Livewire\Livewire;
 
 /**
@@ -22,6 +23,9 @@ class PulseUsers extends Card
 {
     use Concerns\HasPeriod, Concerns\RemembersQueries;
 
+    #[Url(as: 'usage-hours-timezone')]
+    public string $timezone = 'UTC';
+
     /**
      * Render the component.
      */
@@ -31,7 +35,6 @@ class PulseUsers extends Card
             return $this->graph(['user_request'], 'count');
         });
 
-
         if (Livewire::isLivewireRequest()) {
             $this->dispatch('usage-hours-update', labels: $usage->keys(), data: $usage->values());
         }
@@ -40,7 +43,19 @@ class PulseUsers extends Card
             'usage' => $usage,
             'time'  => $time,
             'runAt' => $runAt,
+            'timzones' => $this->timezones(),
         ]);
+    }
+
+    public function timezones(): array
+    {
+        $timezones = config('pulse.usage_hours.timezones');
+
+        if (empty($timezones)) {
+            $timezones = \DateTimeZone::listIdentifiers(\DateTimeZone::ALL);
+        }
+
+        return array_combine($timezones, $timezones);
     }
 
     /**
@@ -66,7 +81,7 @@ class PulseUsers extends Card
 
         $readings = $this->connection()->table('pulse_aggregates')
             ->selectRaw('sum(value) as requests')
-            ->selectRaw('HOUR(FROM_UNIXTIME(bucket)) as hour')
+            ->selectRaw('HOUR(CONVERT_TZ(FROM_UNIXTIME(bucket), "+00:00", ?)) as hour', [$this->timezone]) // Assuming DB is in UTC
             ->whereIn('type', [$types])
             ->where('bucket', '>=', $firstBucket)
             ->where('aggregate', $aggregate)

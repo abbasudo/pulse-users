@@ -7,6 +7,14 @@
         <x-slot:icon>
             <x-pulse::icons.clock/>
         </x-slot:icon>
+        <x-slot:actions>
+            <x-pulse::select
+                    wire:model.live="timezone"
+                    label="Timezone"
+                    :options="$timzones"
+                    @change="loading = true"
+            />
+        </x-slot:actions>
     </x-pulse::card-header>
 
     <x-pulse::scroll wire:poll.5s="">
