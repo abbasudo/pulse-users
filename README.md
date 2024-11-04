@@ -38,6 +38,23 @@ Then, you can modify the `dashboard.blade.php` file:
 
     <livewire:pulse.usage cols='4' rows='1' />
 ```
+
+### Configuraion (optional)
+
+The number of available time zones can be configured in the `config/pulse.php`:
+```php
+    /*
+     * The time zone that will be available in the drop-down selection on the "Usage Distribution" card.
+     */
+    'usage_hours' => [
+        'timezones' => [
+            'UTC',
+            'Europe/Berlin',
+            'Asia/Bangkok',
+        ],
+    ],
+```
+
 ## License
 
 Pulse Users is Licensed under The MIT License (MIT). Please see [License File](https://github.com/abbasudo/pulse-users/blob/master/LICENSE) for more information.
