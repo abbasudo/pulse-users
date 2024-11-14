@@ -23,8 +23,10 @@ class PulseUsers extends Card
 {
     use Concerns\HasPeriod, Concerns\RemembersQueries;
 
+    const DEFAULT_TIMEZONE = 'UTC';
+
     #[Url(as: 'usage-hours-timezone')]
-    public string $timezone = 'UTC';
+    public string $timezone = self::DEFAULT_TIMEZONE;
 
     /**
      * Render the component.
@@ -52,10 +54,26 @@ class PulseUsers extends Card
         $timezones = config('pulse.usage_hours.timezones');
 
         if (empty($timezones)) {
-            $timezones = \DateTimeZone::listIdentifiers(\DateTimeZone::ALL);
+            $timezones = [(new \DateTimeZone(self::DEFAULT_TIMEZONE))->getName()];
         }
 
         return array_combine($timezones, $timezones);
+    }
+
+    public function getTimezoneOffset($timezoneName): string
+    {
+        // Create a DateTime object with the specified timezone
+        $date = new \DateTime('now', new \DateTimeZone($timezoneName));
+
+        // Get the offset in seconds from UTC
+        $offset = $date->getOffset();
+
+        // Convert seconds to hours and minutes
+        $hours = intdiv($offset, 3600);
+        $minutes = abs($offset % 3600 / 60);
+
+        // Format the offset as "+HH:MM" or "-HH:MM"
+        return sprintf("%+03d:%02d", $hours, $minutes);
     }
 
     /**
@@ -81,15 +99,21 @@ class PulseUsers extends Card
 
         $readings = $this->connection()->table('pulse_aggregates')
             ->selectRaw('sum(value) as requests')
-            ->selectRaw('HOUR(CONVERT_TZ(FROM_UNIXTIME(bucket), "+00:00", ?)) as hour', [$this->timezone]) // Assuming DB is in UTC
             ->whereIn('type', [$types])
             ->where('bucket', '>=', $firstBucket)
             ->where('aggregate', $aggregate)
-            ->groupBy('hour')
-            ->get();
+            ->groupBy('hour');
+
+        if ($this->timezone === self::DEFAULT_TIMEZONE) {
+            $readings->selectRaw('HOUR(FROM_UNIXTIME(bucket)) as hour');
+        } else {
+            $readings->selectRaw('HOUR(CONVERT_TZ(FROM_UNIXTIME(bucket), "+00:00", ?)) as hour', [
+                $this->getTimezoneOffset($this->timezone)
+            ]);
+        }
 
         return $structure->merge(
-            $readings->mapWithKeys(function ($reading) {
+            $readings->get()->mapWithKeys(function ($reading) {
                 return ['hour : ' . $reading->hour => (int)$reading->requests];
             })
         );
