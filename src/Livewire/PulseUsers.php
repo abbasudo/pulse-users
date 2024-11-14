@@ -55,6 +55,8 @@ class PulseUsers extends Card
 
         if (empty($timezones)) {
             $timezones = [(new \DateTimeZone(self::DEFAULT_TIMEZONE))->getName()];
+        } elseif (! in_array(self::DEFAULT_TIMEZONE, $timezones)) {
+            array_unshift($timezones, self::DEFAULT_TIMEZONE);
         }
 
         return array_combine($timezones, $timezones);
