@@ -106,12 +106,17 @@ class PulseUsers extends Card
             ->where('aggregate', $aggregate)
             ->groupBy('hour');
 
+        $driver = $this->connection()->getDriverName();
+
         if ($this->timezone === self::DEFAULT_TIMEZONE) {
-            $readings->selectRaw('HOUR(FROM_UNIXTIME(bucket)) as hour');
+            $readings->selectRaw('EXTRACT(HOUR FROM bucket) as hour');
         } else {
-            $readings->selectRaw('HOUR(CONVERT_TZ(FROM_UNIXTIME(bucket), "+00:00", ?)) as hour', [
-                $this->getTimezoneOffset($this->timezone)
-            ]);
+            $offset = $this->getTimezoneOffset($this->timezone);
+            if ($driver === 'pgsql') {
+                $readings->selectRaw("EXTRACT(HOUR FROM bucket AT TIME ZONE 'UTC' AT TIME ZONE ?) as hour", [$offset]);
+            } else {
+                $readings->selectRaw("EXTRACT(HOUR FROM CONVERT_TZ(bucket, '+00:00', ?)) as hour", [$offset]);
+            }
         }
 
         return $structure->merge(
